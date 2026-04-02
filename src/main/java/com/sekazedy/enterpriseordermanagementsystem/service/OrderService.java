@@ -2,6 +2,7 @@ package com.sekazedy.enterpriseordermanagementsystem.service;
 
 import com.sekazedy.enterpriseordermanagementsystem.dto.CreateOrderRequest;
 import com.sekazedy.enterpriseordermanagementsystem.dto.OrderResponse;
+import com.sekazedy.enterpriseordermanagementsystem.exception.InvalidOrderStateException;
 import com.sekazedy.enterpriseordermanagementsystem.exception.NotFoundException;
 import com.sekazedy.enterpriseordermanagementsystem.model.Order;
 import com.sekazedy.enterpriseordermanagementsystem.model.OrderStatus;
@@ -43,6 +44,29 @@ public class OrderService {
                 order.getId(),
                 user.getUserName(),
                 product.getName(),
+                order.getOrderStatus().name()
+        );
+    }
+
+    @Transactional
+    public OrderResponse payOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found"));
+
+        if (order.getOrderStatus() != OrderStatus.NEW) {
+            throw new InvalidOrderStateException("Order cannot be paid in current state");
+        }
+
+        order.setOrderStatus(OrderStatus.PAID);
+
+        return toResponse(order);
+    }
+
+    private OrderResponse toResponse(Order order) {
+        return new OrderResponse(
+                order.getId(),
+                order.getUser().getUserName(),
+                order.getProduct().getName(),
                 order.getOrderStatus().name()
         );
     }

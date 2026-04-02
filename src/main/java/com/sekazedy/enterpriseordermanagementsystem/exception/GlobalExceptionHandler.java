@@ -32,4 +32,10 @@ public class GlobalExceptionHandler {
     public Map<String, String> handleGeneric(Exception ex) {
         return Map.of("error", "Internal Server Error");
     }
+
+    @ExceptionHandler(InvalidOrderStateException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleInvalidState(InvalidOrderStateException ex) {
+        return Map.of("error", ex.getMessage());
+    }
 }
