@@ -2,7 +2,10 @@ package com.sekazedy.enterpriseordermanagementsystem.service;
 
 import com.sekazedy.enterpriseordermanagementsystem.dto.CreateOrderRequest;
 import com.sekazedy.enterpriseordermanagementsystem.dto.OrderResponse;
+import com.sekazedy.enterpriseordermanagementsystem.event.OrderCancelledEvent;
+import com.sekazedy.enterpriseordermanagementsystem.event.OrderDeliveredEvent;
 import com.sekazedy.enterpriseordermanagementsystem.event.OrderPaidEvent;
+import com.sekazedy.enterpriseordermanagementsystem.event.OrderShippedEvent;
 import com.sekazedy.enterpriseordermanagementsystem.exception.InvalidOrderStateException;
 import com.sekazedy.enterpriseordermanagementsystem.exception.NotFoundException;
 import com.sekazedy.enterpriseordermanagementsystem.model.Order;
@@ -45,12 +48,7 @@ public class OrderService {
 
         orderRepository.save(order);
 
-        return new OrderResponse(
-                order.getId(),
-                user.getUserName(),
-                product.getName(),
-                order.getOrderStatus().name()
-        );
+        return toResponse(order);
     }
 
     @Transactional
@@ -65,6 +63,66 @@ public class OrderService {
         order.setOrderStatus(OrderStatus.PAID);
 
         eventPublisher.publishEvent(new OrderPaidEvent(
+                order.getId(),
+                order.getUser().getUserName(),
+                order.getProduct().getName()
+        ));
+
+        return toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse shipOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found"));
+
+        if (order.getOrderStatus() != OrderStatus.PAID) {
+            throw new InvalidOrderStateException("Only PAID orders can be shipped");
+        }
+
+        order.setOrderStatus(OrderStatus.SHIPPED);
+
+        eventPublisher.publishEvent(new OrderShippedEvent(
+                order.getId(),
+                order.getUser().getUserName(),
+                order.getProduct().getName()
+        ));
+
+        return toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse deliverOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found"));
+
+        if (order.getOrderStatus() != OrderStatus.SHIPPED) {
+            throw new InvalidOrderStateException("Only SHIPPED orders can be delivered");
+        }
+
+        order.setOrderStatus(OrderStatus.DELIVERED);
+
+        eventPublisher.publishEvent(new OrderDeliveredEvent(
+                order.getId(),
+                order.getUser().getUserName(),
+                order.getProduct().getName()
+        ));
+
+        return toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found"));
+
+        if (order.getOrderStatus() == OrderStatus.DELIVERED) {
+            throw new InvalidOrderStateException("DELIVERED orders cannot be cancelled");
+        }
+
+        order.setOrderStatus(OrderStatus.CANCELLED);
+
+        eventPublisher.publishEvent(new OrderCancelledEvent(
                 order.getId(),
                 order.getUser().getUserName(),
                 order.getProduct().getName()
