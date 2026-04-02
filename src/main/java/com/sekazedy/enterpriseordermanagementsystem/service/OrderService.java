@@ -2,6 +2,7 @@ package com.sekazedy.enterpriseordermanagementsystem.service;
 
 import com.sekazedy.enterpriseordermanagementsystem.dto.CreateOrderRequest;
 import com.sekazedy.enterpriseordermanagementsystem.dto.OrderResponse;
+import com.sekazedy.enterpriseordermanagementsystem.event.OrderPaidEvent;
 import com.sekazedy.enterpriseordermanagementsystem.exception.InvalidOrderStateException;
 import com.sekazedy.enterpriseordermanagementsystem.exception.NotFoundException;
 import com.sekazedy.enterpriseordermanagementsystem.model.Order;
@@ -12,6 +13,7 @@ import com.sekazedy.enterpriseordermanagementsystem.repository.OrderRepository;
 import com.sekazedy.enterpriseordermanagementsystem.repository.ProductRepository;
 import com.sekazedy.enterpriseordermanagementsystem.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,13 +21,16 @@ public class OrderService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public OrderService(UserRepository userRepository,
                         ProductRepository productRepository,
-                        OrderRepository orderRepository) {
+                        OrderRepository orderRepository,
+                        ApplicationEventPublisher applicationEventPublisher) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
+        this.eventPublisher = applicationEventPublisher;
     }
 
     @Transactional
@@ -58,6 +63,12 @@ public class OrderService {
         }
 
         order.setOrderStatus(OrderStatus.PAID);
+
+        eventPublisher.publishEvent(new OrderPaidEvent(
+                order.getId(),
+                order.getUser().getUserName(),
+                order.getProduct().getName()
+        ));
 
         return toResponse(order);
     }
