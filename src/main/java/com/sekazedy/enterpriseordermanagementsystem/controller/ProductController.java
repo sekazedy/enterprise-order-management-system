@@ -3,6 +3,7 @@ package com.sekazedy.enterpriseordermanagementsystem.controller;
 import com.sekazedy.enterpriseordermanagementsystem.dto.CreateProductRequest;
 import com.sekazedy.enterpriseordermanagementsystem.dto.ProductResponse;
 import com.sekazedy.enterpriseordermanagementsystem.service.ProductService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -13,7 +14,7 @@ public class ProductController {
     public ProductController(ProductService productService) { this.productService = productService; }
 
     @PostMapping
-    public ProductResponse create(@RequestBody CreateProductRequest request) {
+    public ProductResponse create(@Valid @RequestBody CreateProductRequest request) {
         return productService.create(request);
     }
 

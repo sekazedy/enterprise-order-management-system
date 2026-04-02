@@ -1,7 +1,12 @@
 package com.sekazedy.enterpriseordermanagementsystem.dto;
 
+import jakarta.validation.constraints.NotNull;
+
 public class CreateOrderRequest {
+    @NotNull
     private Long userId;
+
+    @NotNull
     private Long productId;
 
     public Long getUserId() { return userId; }

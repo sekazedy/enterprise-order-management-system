@@ -2,6 +2,7 @@ package com.sekazedy.enterpriseordermanagementsystem.service;
 
 import com.sekazedy.enterpriseordermanagementsystem.dto.CreateProductRequest;
 import com.sekazedy.enterpriseordermanagementsystem.dto.ProductResponse;
+import com.sekazedy.enterpriseordermanagementsystem.exception.NotFoundException;
 import com.sekazedy.enterpriseordermanagementsystem.model.Product;
 import com.sekazedy.enterpriseordermanagementsystem.repository.ProductRepository;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class ProductService {
 
     public ProductResponse getById(Long id) {
         Product product =  productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new NotFoundException("Product not found"));
 
         return toResponse(product);
     }

@@ -2,6 +2,7 @@ package com.sekazedy.enterpriseordermanagementsystem.service;
 
 import com.sekazedy.enterpriseordermanagementsystem.dto.CreateOrderRequest;
 import com.sekazedy.enterpriseordermanagementsystem.dto.OrderResponse;
+import com.sekazedy.enterpriseordermanagementsystem.exception.NotFoundException;
 import com.sekazedy.enterpriseordermanagementsystem.model.Order;
 import com.sekazedy.enterpriseordermanagementsystem.model.OrderStatus;
 import com.sekazedy.enterpriseordermanagementsystem.model.Product;
@@ -29,10 +30,10 @@ public class OrderService {
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new NotFoundException("Product not found"));
 
         Order order = new Order(user, product, OrderStatus.NEW);
 

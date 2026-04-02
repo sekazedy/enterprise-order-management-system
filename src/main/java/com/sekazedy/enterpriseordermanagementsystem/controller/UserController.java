@@ -3,6 +3,7 @@ package com.sekazedy.enterpriseordermanagementsystem.controller;
 import com.sekazedy.enterpriseordermanagementsystem.dto.CreateUserRequest;
 import com.sekazedy.enterpriseordermanagementsystem.dto.UserResponse;
 import com.sekazedy.enterpriseordermanagementsystem.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -13,7 +14,7 @@ public class UserController {
     public UserController(UserService userService) { this.userService = userService; }
 
     @PostMapping
-    public UserResponse create(@RequestBody CreateUserRequest request) {
+    public UserResponse create(@Valid @RequestBody CreateUserRequest request) {
         return userService.create(request);
     }
 
