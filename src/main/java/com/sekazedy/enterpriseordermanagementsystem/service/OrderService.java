@@ -16,6 +16,7 @@ import com.sekazedy.enterpriseordermanagementsystem.repository.OrderRepository;
 import com.sekazedy.enterpriseordermanagementsystem.repository.ProductRepository;
 import com.sekazedy.enterpriseordermanagementsystem.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -45,7 +46,6 @@ public class OrderService {
                 .orElseThrow(() -> new NotFoundException("Product not found"));
 
         Order order = new Order(user, product, OrderStatus.NEW);
-
         orderRepository.save(order);
 
         return toResponse(order);
@@ -53,14 +53,14 @@ public class OrderService {
 
     @Transactional
     public OrderResponse payOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found"));
+        Order order = getOrderOrThrow(orderId);
 
         if (order.getOrderStatus() != OrderStatus.NEW) {
             throw new InvalidOrderStateException("Order cannot be paid in current state");
         }
 
         order.setOrderStatus(OrderStatus.PAID);
+        orderRepository.save(order);
 
         eventPublisher.publishEvent(new OrderPaidEvent(
                 order.getId(),
@@ -73,14 +73,14 @@ public class OrderService {
 
     @Transactional
     public OrderResponse shipOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found"));
+        Order order = getOrderOrThrow(orderId);
 
         if (order.getOrderStatus() != OrderStatus.PAID) {
             throw new InvalidOrderStateException("Only PAID orders can be shipped");
         }
 
         order.setOrderStatus(OrderStatus.SHIPPED);
+        orderRepository.save(order);
 
         eventPublisher.publishEvent(new OrderShippedEvent(
                 order.getId(),
@@ -93,14 +93,14 @@ public class OrderService {
 
     @Transactional
     public OrderResponse deliverOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found"));
+        Order order = getOrderOrThrow(orderId);
 
         if (order.getOrderStatus() != OrderStatus.SHIPPED) {
             throw new InvalidOrderStateException("Only SHIPPED orders can be delivered");
         }
 
         order.setOrderStatus(OrderStatus.DELIVERED);
+        orderRepository.save(order);
 
         eventPublisher.publishEvent(new OrderDeliveredEvent(
                 order.getId(),
@@ -113,14 +113,14 @@ public class OrderService {
 
     @Transactional
     public OrderResponse cancelOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found"));
+        Order order = getOrderOrThrow(orderId);
 
         if (order.getOrderStatus() == OrderStatus.DELIVERED) {
             throw new InvalidOrderStateException("DELIVERED orders cannot be cancelled");
         }
 
         order.setOrderStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
 
         eventPublisher.publishEvent(new OrderCancelledEvent(
                 order.getId(),
@@ -129,6 +129,11 @@ public class OrderService {
         ));
 
         return toResponse(order);
+    }
+
+    private @NonNull Order getOrderOrThrow(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found"));
     }
 
     private OrderResponse toResponse(Order order) {
