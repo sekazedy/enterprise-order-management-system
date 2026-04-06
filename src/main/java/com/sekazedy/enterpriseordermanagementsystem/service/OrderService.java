@@ -1,11 +1,8 @@
 package com.sekazedy.enterpriseordermanagementsystem.service;
 
 import com.sekazedy.enterpriseordermanagementsystem.dto.CreateOrderRequest;
+import com.sekazedy.enterpriseordermanagementsystem.dto.OrderEvent;
 import com.sekazedy.enterpriseordermanagementsystem.dto.OrderResponse;
-import com.sekazedy.enterpriseordermanagementsystem.event.OrderCancelledEvent;
-import com.sekazedy.enterpriseordermanagementsystem.event.OrderDeliveredEvent;
-import com.sekazedy.enterpriseordermanagementsystem.event.OrderPaidEvent;
-import com.sekazedy.enterpriseordermanagementsystem.event.OrderShippedEvent;
 import com.sekazedy.enterpriseordermanagementsystem.exception.InvalidOrderStateException;
 import com.sekazedy.enterpriseordermanagementsystem.exception.NotFoundException;
 import com.sekazedy.enterpriseordermanagementsystem.model.Order;
@@ -17,7 +14,6 @@ import com.sekazedy.enterpriseordermanagementsystem.repository.ProductRepository
 import com.sekazedy.enterpriseordermanagementsystem.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.jspecify.annotations.NonNull;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,16 +21,16 @@ public class OrderService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final OrderEventPublisher eventPublisher;
 
     public OrderService(UserRepository userRepository,
                         ProductRepository productRepository,
                         OrderRepository orderRepository,
-                        ApplicationEventPublisher applicationEventPublisher) {
+                        OrderEventPublisher orderEventPublisher) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
-        this.eventPublisher = applicationEventPublisher;
+        this.eventPublisher = orderEventPublisher;
     }
 
     @Transactional
@@ -62,11 +58,13 @@ public class OrderService {
         order.setOrderStatus(OrderStatus.PAID);
         orderRepository.save(order);
 
-        eventPublisher.publishEvent(new OrderPaidEvent(
+        eventPublisher.publishOrderPaid(
+            new OrderEvent(
                 order.getId(),
                 order.getUser().getUserName(),
                 order.getProduct().getName()
-        ));
+            )
+        );
 
         return toResponse(order);
     }
@@ -82,11 +80,13 @@ public class OrderService {
         order.setOrderStatus(OrderStatus.SHIPPED);
         orderRepository.save(order);
 
-        eventPublisher.publishEvent(new OrderShippedEvent(
+        eventPublisher.publishOrderShipped(
+            new OrderEvent(
                 order.getId(),
                 order.getUser().getUserName(),
                 order.getProduct().getName()
-        ));
+            )
+        );
 
         return toResponse(order);
     }
@@ -102,11 +102,13 @@ public class OrderService {
         order.setOrderStatus(OrderStatus.DELIVERED);
         orderRepository.save(order);
 
-        eventPublisher.publishEvent(new OrderDeliveredEvent(
+        eventPublisher.publishOrderDelivered(
+            new OrderEvent(
                 order.getId(),
                 order.getUser().getUserName(),
                 order.getProduct().getName()
-        ));
+            )
+        );
 
         return toResponse(order);
     }
@@ -122,11 +124,13 @@ public class OrderService {
         order.setOrderStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
 
-        eventPublisher.publishEvent(new OrderCancelledEvent(
+        eventPublisher.publishOrderCancelled(
+            new OrderEvent(
                 order.getId(),
                 order.getUser().getUserName(),
                 order.getProduct().getName()
-        ));
+            )
+        );
 
         return toResponse(order);
     }
